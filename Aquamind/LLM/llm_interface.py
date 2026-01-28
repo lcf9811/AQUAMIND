@@ -1,12 +1,19 @@
 """
 大模型API接口管理器
 支持Qwen和OpenAI兼容接口
+
+功能:
+- 自动重试机制
+- 超时控制
+- 错误处理
+- 日志记录
 """
 
 import os
 import openai
 from dotenv import load_dotenv
 import json
+import time
 from typing import Dict, Any, List, Optional
 import sys
 
@@ -14,31 +21,85 @@ import sys
 load_dotenv()
 
 # 添加项目根目录到Python路径
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
+
+# 导入配置和异常
+try:
+    from config import llm_config
+    from logger import get_logger
+    from exceptions import (
+        LLMError,
+        LLMTimeoutError,
+        LLMRateLimitError,
+        LLMResponseError
+    )
+    USE_ENHANCED_FEATURES = True
+except ImportError:
+    # 如果配置文件不存在，使用基础功能
+    USE_ENHANCED_FEATURES = False
+    llm_config = None
 
 class LLMInterface:
-    """大模型接口管理器"""
+    """
+    大模型接口管理器
+    
+    功能:
+    - 支持Qwen和OpenAI兼容接口
+    - 自动重试机制（处理网络错误、频率限制）
+    - 超时控制
+    - 详细错误日志
+    """
 
     def __init__(self):
         """初始化大模型接口"""
-        # 从环境变量获取配置
-        self.qwen_api_base = os.getenv("QWEN_API_BASE")
-        self.qwen_api_key = os.getenv("QWEN_API_KEY")
-        self.qwen_model_name = os.getenv("QWEN_MODEL_NAME", "qwen-max")
-
-        self.openai_api_base = os.getenv("OPENAI_API_BASE")
-        self.openai_api_key = os.getenv("OPENAI_API_KEY")
+        # 初始化日志
+        if USE_ENHANCED_FEATURES:
+            self.logger = get_logger(__name__)
+        else:
+            self.logger = None
+        
+        # 从配置或环境变量获取参数
+        if USE_ENHANCED_FEATURES and llm_config:
+            self.qwen_api_base = llm_config.QWEN_API_BASE
+            self.qwen_api_key = llm_config.QWEN_API_KEY
+            self.qwen_model_name = llm_config.QWEN_MODEL_NAME
+            self.openai_api_base = llm_config.OPENAI_API_BASE
+            self.openai_api_key = llm_config.OPENAI_API_KEY
+            self.timeout = llm_config.REQUEST_TIMEOUT
+            self.max_retries = llm_config.MAX_RETRIES
+            self.retry_delay = llm_config.RETRY_DELAY
+        else:
+            # 回退到环境变量
+            self.qwen_api_base = os.getenv("QWEN_API_BASE")
+            self.qwen_api_key = os.getenv("QWEN_API_KEY")
+            self.qwen_model_name = os.getenv("QWEN_MODEL_NAME", "qwen-plus")
+            self.openai_api_base = os.getenv("OPENAI_API_BASE")
+            self.openai_api_key = os.getenv("OPENAI_API_KEY")
+            self.timeout = int(os.getenv("LLM_REQUEST_TIMEOUT", "60"))
+            self.max_retries = int(os.getenv("LLM_MAX_RETRIES", "3"))
+            self.retry_delay = float(os.getenv("LLM_RETRY_DELAY", "1.0"))
 
         # 设置OpenAI客户端
-        self.client = openai.OpenAI(
-            base_url=self.qwen_api_base or self.openai_api_base,
-            api_key=self.qwen_api_key or self.openai_api_key
-        )
-        self.model_name = self.qwen_model_name
+        try:
+            self.client = openai.OpenAI(
+                base_url=self.qwen_api_base or self.openai_api_base,
+                api_key=self.qwen_api_key or self.openai_api_key,
+                timeout=self.timeout
+            )
+            self.model_name = self.qwen_model_name
+            
+            if self.logger:
+                self.logger.info(f"LLM接口初始化成功 - 模型: {self.model_name}")
+        except Exception as e:
+            if self.logger:
+                self.logger.error(f"LLM接口初始化失败: {e}")
+            raise
 
     def call_llm(self, prompt: str, max_tokens: int = 1000, temperature: float = 0.7) -> str:
         """
-        调用大模型API
+        调用大模型API（带重试机制）
 
         Args:
             prompt: 输入提示
@@ -47,22 +108,88 @@ class LLMInterface:
 
         Returns:
             模型生成的文本
+            
+        Raises:
+            LLMError: LLM调用失败
+            LLMTimeoutError: 请求超时
+            LLMRateLimitError: 频率限制
         """
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=max_tokens,
-                temperature=temperature
-            )
-
-            return response.choices[0].message.content
-        except Exception as e:
-            print(f"调用大模型API时出错: {e}")
-            # 返回错误情况下的默认响应
-            return f"抱歉，模型调用出现问题: {str(e)}"
+        last_error = None
+        
+        for attempt in range(self.max_retries):
+            try:
+                start_time = time.time()
+                
+                response = self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=[
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=max_tokens,
+                    temperature=temperature
+                )
+                
+                latency = time.time() - start_time
+                
+                if self.logger:
+                    self.logger.debug(
+                        f"LLM调用成功 - 耗时: {latency:.2f}秒, "
+                        f"提示词: {len(prompt)}字符"
+                    )
+                
+                return response.choices[0].message.content
+                
+            except openai.Timeout as e:
+                last_error = e
+                if self.logger:
+                    self.logger.warning(
+                        f"LLM请求超时 (尝试 {attempt + 1}/{self.max_retries}): {e}"
+                    )
+                if attempt < self.max_retries - 1:
+                    time.sleep(self.retry_delay * (attempt + 1))
+                    
+            except openai.RateLimitError as e:
+                last_error = e
+                if self.logger:
+                    self.logger.warning(
+                        f"LLM频率限制 (尝试 {attempt + 1}/{self.max_retries}): {e}"
+                    )
+                # 频率限制时等待更长时间
+                if attempt < self.max_retries - 1:
+                    time.sleep(self.retry_delay * (attempt + 1) * 2)
+                    
+            except openai.APIError as e:
+                last_error = e
+                if self.logger:
+                    self.logger.error(f"LLM API错误: {e}")
+                # API错误通常不需要重试
+                break
+                
+            except Exception as e:
+                last_error = e
+                if self.logger:
+                    self.logger.error(
+                        f"LLM调用异常 (尝试 {attempt + 1}/{self.max_retries}): {e}"
+                    )
+                if attempt < self.max_retries - 1:
+                    time.sleep(self.retry_delay)
+        
+        # 所有重试都失败
+        error_msg = f"LLM调用失败（已重试{self.max_retries}次）: {last_error}"
+        if self.logger:
+            self.logger.error(error_msg)
+        
+        # 根据增强功能决定是否抛出异常
+        if USE_ENHANCED_FEATURES:
+            if isinstance(last_error, openai.Timeout):
+                raise LLMTimeoutError(self.timeout, self.model_name)
+            elif isinstance(last_error, openai.RateLimitError):
+                raise LLMRateLimitError(model_name=self.model_name)
+            else:
+                raise LLMError(error_msg, self.model_name)
+        else:
+            # 兼容模式：返回错误消息
+            return f"抱歉，模型调用出现问题: {str(last_error)}"
 
     def predict_toxicity_with_llm(self, input_data: Dict[str, Any], historical_data: Dict[str, Any] = None) -> Dict[str, Any]:
         """

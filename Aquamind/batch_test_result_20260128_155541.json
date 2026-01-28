@@ -1,0 +1,92 @@
+[
+  {
+    "test_id": 1,
+    "input": "请帮我预测毒性，当前氨氮20mg/L，温度22度",
+    "expected_intent": "predict_toxicity",
+    "actual_intent": "predict_toxicity",
+    "success": true,
+    "response_time": 294.8727059364319,
+    "output_length": 895
+  },
+  {
+    "test_id": 2,
+    "input": "进水毒性3.5，请给出转盘控制建议",
+    "expected_intent": "control_turntable",
+    "actual_intent": "collect_feedback",
+    "success": false,
+    "response_time": 39.90926432609558,
+    "output_length": 411
+  },
+  {
+    "test_id": 3,
+    "input": "MBR膜压力升高了，TMP达到28kPa",
+    "expected_intent": "control_mbr",
+    "actual_intent": "control_mbr",
+    "success": true,
+    "response_time": 0.00042748451232910156,
+    "output_length": 403
+  },
+  {
+    "test_id": 4,
+    "input": "活性炭效率降到65%了，需要再生吗",
+    "expected_intent": "check_regeneration",
+    "actual_intent": "check_regeneration",
+    "success": true,
+    "response_time": 0.002184152603149414,
+    "output_length": 422
+  },
+  {
+    "test_id": 5,
+    "input": "请帮我诊断一下系统状态",
+    "expected_intent": "system_diagnostic",
+    "actual_intent": "system_diagnostic",
+    "success": true,
+    "response_time": 0.0002079010009765625,
+    "output_length": 454
+  },
+  {
+    "test_id": 6,
+    "input": "今天出水水质不理想，建议提高转盘转速",
+    "expected_intent": "collect_feedback",
+    "actual_intent": "collect_feedback",
+    "success": true,
+    "response_time": 39.916425943374634,
+    "output_length": 414
+  },
+  {
+    "test_id": 7,
+    "input": "请给我一个完整的系统分析",
+    "expected_intent": "full_analysis",
+    "actual_intent": "full_analysis",
+    "success": true,
+    "response_time": 102.54671144485474,
+    "output_length": 3531
+  },
+  {
+    "test_id": 8,
+    "input": "氨氮30mg/L，温度18度，pH 7.5，请预测毒性",
+    "expected_intent": "predict_toxicity",
+    "actual_intent": "predict_toxicity",
+    "success": true,
+    "response_time": 28.36602807044983,
+    "output_length": 1482
+  },
+  {
+    "test_id": 9,
+    "input": "转盘1号反应器频率设置多少合适",
+    "expected_intent": "control_turntable",
+    "actual_intent": "control_turntable",
+    "success": true,
+    "response_time": 0.00037360191345214844,
+    "output_length": 431
+  },
+  {
+    "test_id": 10,
+    "input": "MBR系统曝气量需要调整吗",
+    "expected_intent": "control_mbr",
+    "actual_intent": "control_mbr",
+    "success": true,
+    "response_time": 0.00039386749267578125,
+    "output_length": 396
+  }
+]

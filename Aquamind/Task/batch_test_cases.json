@@ -1,0 +1,52 @@
+[
+  {
+    "input": "请帮我预测毒性，当前氨氮20mg/L，温度22度",
+    "intent": "predict_toxicity",
+    "description": "毒性预测场景"
+  },
+  {
+    "input": "进水毒性3.5，请给出转盘控制建议",
+    "intent": "control_turntable",
+    "description": "转盘控制场景"
+  },
+  {
+    "input": "MBR膜压力升高了，TMP达到28kPa",
+    "intent": "control_mbr",
+    "description": "MBR控制场景"
+  },
+  {
+    "input": "活性炭效率降到65%了，需要再生吗",
+    "intent": "check_regeneration",
+    "description": "再生检查场景"
+  },
+  {
+    "input": "请帮我诊断一下系统状态",
+    "intent": "system_diagnostic",
+    "description": "系统诊断场景"
+  },
+  {
+    "input": "今天出水水质不理想，建议提高转盘转速",
+    "intent": "collect_feedback",
+    "description": "反馈收集场景"
+  },
+  {
+    "input": "请给我一个完整的系统分析",
+    "intent": "full_analysis",
+    "description": "综合分析场景"
+  },
+  {
+    "input": "氨氮30mg/L，温度18度，pH 7.5，请预测毒性",
+    "intent": "predict_toxicity",
+    "description": "多参数毒性预测"
+  },
+  {
+    "input": "转盘1号反应器频率设置多少合适",
+    "intent": "control_turntable",
+    "description": "转盘参数咨询"
+  },
+  {
+    "input": "MBR系统曝气量需要调整吗",
+    "intent": "control_mbr",
+    "description": "MBR参数咨询"
+  }
+]

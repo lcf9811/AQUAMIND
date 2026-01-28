@@ -1,0 +1,17 @@
+2026-01-28 16:08:03 - system - INFO - ============================================================
+2026-01-28 16:08:03 - system - INFO - Aquamind Systems v2.0.0
+2026-01-28 16:08:03 - system - INFO - 调试模式: False
+2026-01-28 16:08:03 - system - INFO - 日志级别: INFO
+2026-01-28 16:08:03 - system - INFO - 日志文件: /home/wsl2/agentwater/llmagent/Aquamind/logs/aquamind.log
+2026-01-28 16:08:03 - system - INFO - ============================================================
+2026-01-28 16:08:04 - LLM.llm_interface - INFO - LLM接口初始化成功 - 模型: qwen-plus
+2026-01-28 16:08:04 - LLM.llm_interface - INFO - LLM接口初始化成功 - 模型: qwen-plus
+2026-01-28 16:08:04 - __main__ - INFO - 系统初始化完成，耗时: 0.44秒
+2026-01-28 16:08:27 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-28 16:08:43 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-28 16:08:44 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-28 16:09:00 - __main__ - INFO - 交互 1 完成，响应时间: 33.86秒
+2026-01-28 16:09:37 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-28 16:09:50 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-28 16:09:51 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-28 16:10:14 - __main__ - INFO - 交互 2 完成，响应时间: 37.50秒
