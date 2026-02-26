@@ -1,0 +1,2 @@
+2026-01-29 11:30:34 - __main__ - ERROR - 初始化 Supervisor 失败: The api_key client option must be set either by passing api_key to the client or by setting the OPENAI_API_KEY environment variable
+2026-02-06 11:23:10 - __main__ - ERROR - 处理输入时发生错误: 
