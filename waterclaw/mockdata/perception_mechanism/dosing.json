@@ -1,0 +1,83 @@
+{
+  "domain": "dosing",
+  "snapshot_id": "mech-snap-dosing-001",
+  "timestamp_utc": "2026-04-17T08:00:00.000Z",
+  "source": "mechanism_model_mock",
+
+  "inlet_water_quality": {
+    "COD_mg_l": 210.0,
+    "SS_mg_l": 135.0,
+    "TP_mg_l": 3.8,
+    "TN_mg_l": 38.0,
+    "NH3_N_mg_l": 28.5,
+    "pH": 7.15,
+    "turbidity_NTU": 48.0,
+    "temperature_C": 17.5,
+    "flow_m3_h": 1250.0
+  },
+
+  "dosing_status": {
+    "current_pac_dose_mg_l": 22.0,
+    "pump_A": {
+      "stroke_percent": 55.0,
+      "flow_ml_min": 260.0,
+      "running": true
+    },
+    "pump_B": {
+      "stroke_percent": 52.0,
+      "flow_ml_min": 245.0,
+      "running": true
+    },
+    "pump_C": {
+      "stroke_percent": 0.0,
+      "flow_ml_min": 0.0,
+      "running": false
+    }
+  },
+
+  "chemical_tanks": {
+    "PAC": {
+      "level_percent": 62.0,
+      "concentration_percent": 10.0,
+      "density_kg_l": 1.15
+    },
+    "HCl_regen": {
+      "level_percent": 48.0,
+      "concentration_percent": 5.0,
+      "batch_in_progress": false
+    },
+    "NaOH_regen": {
+      "level_percent": 55.0,
+      "concentration_percent": 4.0,
+      "batch_in_progress": false
+    }
+  },
+
+  "post_dosing_quality": {
+    "TP_mg_l": 0.35,
+    "SS_mg_l": 18.0,
+    "turbidity_NTU": 5.2,
+    "pH": 7.05
+  },
+
+  "online_analyzers": {
+    "orp_mv": 285.0,
+    "ph_post_dosing": 7.05,
+    "residual_al_mg_l": 0.12
+  },
+
+  "regeneration": {
+    "state": "idle",
+    "adsorption_saturation_pct": 72.0,
+    "last_regen_completed_utc": "2026-04-16T14:30:00.000Z",
+    "regen_hot_tank_temp_C": 65.0,
+    "regen_target_temp_C": 70.0
+  },
+
+  "dosing_history_recent": [
+    {"ts": "2026-04-17T07:00:00Z", "dose_mg_l": 20.0, "post_TP": 0.42},
+    {"ts": "2026-04-17T06:00:00Z", "dose_mg_l": 18.0, "post_TP": 0.48},
+    {"ts": "2026-04-17T05:00:00Z", "dose_mg_l": 18.0, "post_TP": 0.45},
+    {"ts": "2026-04-17T04:00:00Z", "dose_mg_l": 15.0, "post_TP": 0.55}
+  ]
+}

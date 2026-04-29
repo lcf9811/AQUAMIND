@@ -1,0 +1,66 @@
+{
+  "domain": "sludge",
+  "snapshot_id": "mech-snap-sludge-001",
+  "timestamp_utc": "2026-04-17T08:00:00.000Z",
+  "source": "mechanism_model_mock",
+
+  "aeration_tank": {
+    "volume_m3": 5000.0,
+    "mlss_mg_l": 3500.0,
+    "mlvss_mg_l": 2800.0,
+    "do_mg_l": 2.1,
+    "water_temp_C": 17.5
+  },
+
+  "secondary_clarifier": {
+    "area_m2": 800.0,
+    "depth_m": 4.0,
+    "sludge_blanket_m": 0.8
+  },
+
+  "sludge_properties": {
+    "rass_mg_l": 8500.0,
+    "sv30_ml_l": 250.0,
+    "svi_ml_g": 71.4,
+    "sludge_color": "dark_brown",
+    "settleability": "good"
+  },
+
+  "return_sludge": {
+    "return_ratio_pct": 60.0,
+    "return_pump_hz": 32.0,
+    "return_flow_m3_h": 750.0,
+    "pump_rated_hz": 50.0,
+    "pump_rated_flow_m3_h": 1200.0
+  },
+
+  "wasting": {
+    "wasting_pump_running": false,
+    "daily_wasting_m3": 15.0,
+    "wasting_pump_capacity_m3_h": 50.0,
+    "last_wasting_utc": "2026-04-16T22:00:00.000Z"
+  },
+
+  "inlet_load": {
+    "flow_m3_h": 1250.0,
+    "COD_mg_l": 210.0,
+    "NH3_N_mg_l": 28.5
+  },
+
+  "estimated_parameters": {
+    "srt_days": 18.0,
+    "f_m_ratio": 0.19,
+    "solid_loading_rate_kg_m2_d": 85.0,
+    "yield_coefficient": 0.5
+  },
+
+  "svi_history_7d": [
+    {"date": "2026-04-17", "svi": 71.4},
+    {"date": "2026-04-16", "svi": 70.2},
+    {"date": "2026-04-15", "svi": 68.5},
+    {"date": "2026-04-14", "svi": 72.1},
+    {"date": "2026-04-13", "svi": 69.8},
+    {"date": "2026-04-12", "svi": 67.0},
+    {"date": "2026-04-11", "svi": 65.5}
+  ]
+}

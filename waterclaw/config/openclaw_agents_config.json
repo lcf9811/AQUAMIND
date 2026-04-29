@@ -1,0 +1,469 @@
+{
+  "version": "1.0.0",
+  "project": "water_treatment_openclaw",
+  "agents": [
+    {
+      "id": "inlet_process",
+      "type": "specialist_agent",
+      "implementation": "app.agents.inlet_process_agent.InletProcessAgent",
+      "status": "active"
+    },
+    {
+      "id": "outlet_process",
+      "type": "specialist_agent",
+      "implementation": "app.agents.outlet_process_agent.OutletProcessAgent",
+      "status": "active"
+    },
+    {
+      "id": "process_stage",
+      "type": "specialist_agent",
+      "implementation": "app.agents.process_stage_agent.ProcessStageAgent",
+      "status": "active"
+    },
+    {
+      "id": "anaerobic_process",
+      "type": "specialist_agent",
+      "implementation": "app.agents.anaerobic_process_agent.AnaerobicProcessAgent",
+      "status": "active"
+    },
+    {
+      "id": "anoxic_process",
+      "type": "specialist_agent",
+      "implementation": "app.agents.anoxic_process_agent.AnoxicProcessAgent",
+      "status": "active"
+    },
+    {
+      "id": "aerobic_process",
+      "type": "specialist_agent",
+      "implementation": "app.agents.aerobic_process_agent.AerobicProcessAgent",
+      "status": "active"
+    }
+  ],
+  "tools": [
+    {
+      "agent_id": "inlet_process",
+      "name": "Inlet Process Agent",
+      "description": "进水工艺智能体，负责进水流量、水质评估和均质池控制",
+      "skills": [
+        {
+          "name": "inlet_assess_flow_quality",
+          "description": "评估瞬时流量、浊度、水温是否达标",
+          "parameters": [],
+          "returns": "assessment_result"
+        },
+        {
+          "name": "inlet_adjust_screen_pump",
+          "description": "格栅/提升泵协同控制",
+          "parameters": [
+            {
+              "name": "target_pump_hz",
+              "type": "float",
+              "description": "目标泵频率(Hz)"
+            },
+            {
+              "name": "pump_id",
+              "type": "string",
+              "description": "泵标识(A/B)",
+              "default": "A"
+            }
+          ],
+          "returns": "control_result"
+        },
+        {
+          "name": "inlet_set_equalization",
+          "description": "调节均质/均量池液位与泵频",
+          "parameters": [
+            {
+              "name": "target_level_m",
+              "type": "float",
+              "description": "目标液位(米)"
+            },
+            {
+              "name": "tank_id",
+              "type": "string",
+              "description": "水池标识(A/B)",
+              "default": "A"
+            }
+          ],
+          "returns": "control_result"
+        },
+        {
+          "name": "assess_coordinated_line_switch",
+          "description": "评估二备一线路状态与联动切换（coordinated_line_switch）约束，不执行写操作",
+          "parameters": [
+            {
+              "name": "scenario_reason",
+              "type": "string",
+              "description": "触发原因摘要",
+              "default": ""
+            },
+            {
+              "name": "close_line_hint",
+              "type": "int",
+              "description": "待关闭线路 1-3，可选",
+              "default": null
+            }
+          ],
+          "returns": "line_switch_assessment"
+        }
+      ],
+      "endpoints": {
+        "snapshot": "http://localhost:5000/api/v1/inlet/snapshot",
+        "control": "http://localhost:5000/api/v1/inlet/{action}"
+      }
+    },
+    {
+      "agent_id": "outlet_process",
+      "name": "Outlet Process Agent",
+      "description": "出水工艺智能体，负责出水水质合规检查和深度处理控制",
+      "skills": [
+        {
+          "name": "outlet_check_compliance",
+          "description": "COD、氨氮、总磷等合规判定",
+          "parameters": [],
+          "returns": "compliance_assessment"
+        },
+        {
+          "name": "outlet_adjust_polishing",
+          "description": "深度处理单元（如臭氧/过滤）强度控制",
+          "parameters": [
+            {
+              "name": "intensity",
+              "type": "int",
+              "description": "处理强度(0-100%)"
+            },
+            {
+              "name": "unit_type",
+              "type": "string",
+              "description": "处理单元类型(ozone/filter/uv/activated_carbon)",
+              "default": "ozone"
+            }
+          ],
+          "returns": "control_result"
+        }
+      ],
+      "endpoints": {
+        "snapshot": "http://localhost:5000/api/v1/outlet/snapshot",
+        "control": "http://localhost:5000/api/v1/outlet/{action}"
+      },
+      "additional_functions": [
+        {
+          "name": "get_compliance_trend",
+          "description": "获取合规趋势分析",
+          "parameters": [
+            {
+              "name": "hours",
+              "type": "int",
+              "description": "分析的时间范围（小时）",
+              "default": 24
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "agent_id": "process_stage",
+      "name": "Process Stage Agent (AAO Orchestrator)",
+      "description": "AAO工段编排智能体, 统一调度厌氧/缺氧/好氧三段子智能体, 对接SUMO自迭代",
+      "skills": [
+        {
+          "name": "get_process_status",
+          "description": "获取三段全工况状态(供LLM推理)",
+          "parameters": [],
+          "returns": "process_status"
+        },
+        {
+          "name": "validate_suggestions",
+          "description": "用SUMO机理模型验证LLM的调控建议",
+          "parameters": [
+            {
+              "name": "suggestions",
+              "type": "dict",
+              "description": "LLM给出的三段调控参数"
+            },
+            {
+              "name": "inlet_state",
+              "type": "dict",
+              "description": "进水工况(可选)",
+              "default": null
+            }
+          ],
+          "returns": "validation_result"
+        },
+        {
+          "name": "run_full_optimization",
+          "description": "按序执行厌氧→缺氧→好氧全段优化",
+          "parameters": [],
+          "returns": "full_optimization_result"
+        },
+        {
+          "name": "export_to_sumo",
+          "description": "导出三段参数到SUMO输入文件",
+          "parameters": [
+            {
+              "name": "influent",
+              "type": "dict",
+              "description": "进水水质(可选)",
+              "default": null
+            }
+          ],
+          "returns": "sumo_export_result"
+        },
+        {
+          "name": "import_sumo_results",
+          "description": "导入SUMO输出并生成偏差报告",
+          "parameters": [
+            {
+              "name": "sumo_output_path",
+              "type": "str",
+              "description": "SUMO输出文件路径"
+            }
+          ],
+          "returns": "comparison_report"
+        },
+        {
+          "name": "run_iteration_cycle",
+          "description": "执行一轮SUMO自迭代(对比→修正→导出)",
+          "parameters": [
+            {
+              "name": "sumo_output_path",
+              "type": "str",
+              "description": "SUMO输出文件路径"
+            },
+            {
+              "name": "iteration",
+              "type": "int",
+              "description": "当前迭代轮次",
+              "default": 0
+            }
+          ],
+          "returns": "iteration_result"
+        }
+      ],
+      "sub_agents": {
+        "anaerobic": {
+          "agent_id": "anaerobic_process",
+          "name": "Anaerobic Process Agent",
+          "description": "厌氧段智能体, 负责碳源投加、搅拌控制、污泥回流优化",
+          "skills": [
+            {
+              "name": "get_stage_status",
+              "description": "获取厌氧段当前工况(供LLM推理)",
+              "parameters": [],
+              "returns": "stage_status"
+            },
+            {
+              "name": "optimize_dosing",
+              "description": "碳源投加量优化 (C/N, VFA/TP)",
+              "parameters": [],
+              "returns": "dosing_result"
+            },
+            {
+              "name": "optimize_mixing",
+              "description": "搅拌强度优化 (3~8 W/m³, DO<0.2)",
+              "parameters": [],
+              "returns": "mixing_result"
+            },
+            {
+              "name": "optimize_recirculation",
+              "description": "污泥回流比优化 (浓度法)",
+              "parameters": [],
+              "returns": "recirculation_result"
+            }
+          ],
+          "endpoints": {
+            "snapshot": "http://localhost:5000/api/v1/process_stage/anaerobic/snapshot",
+            "control": "http://localhost:5000/api/v1/process_stage/anaerobic/{action}"
+          }
+        },
+        "anoxic": {
+          "agent_id": "anoxic_process",
+          "name": "Anoxic Process Agent",
+          "description": "缺氧段智能体, 负责外加碳源优化、搅拌控制、硝化液内回流优化",
+          "skills": [
+            {
+              "name": "get_stage_status",
+              "description": "获取缺氧段当前工况(供LLM推理)",
+              "parameters": [],
+              "returns": "stage_status"
+            },
+            {
+              "name": "optimize_dosing",
+              "description": "外加碳源优化 (反硝化碳需)",
+              "parameters": [],
+              "returns": "dosing_result"
+            },
+            {
+              "name": "optimize_mixing",
+              "description": "搅拌控制优化 (5~10 W/m³, DO<0.5)",
+              "parameters": [],
+              "returns": "mixing_result"
+            },
+            {
+              "name": "optimize_recirculation",
+              "description": "硬化液内回流优化 (r=200%~400%)",
+              "parameters": [],
+              "returns": "recirculation_result"
+            }
+          ],
+          "endpoints": {
+            "snapshot": "http://localhost:5000/api/v1/process_stage/anoxic/snapshot",
+            "control": "http://localhost:5000/api/v1/process_stage/anoxic/{action}"
+          }
+        },
+        "aerobic": {
+          "agent_id": "aerobic_process",
+          "name": "Aerobic Process Agent",
+          "description": "好氧段智能体, 负责曝气DO控制、化学除磷、混合液回流、搅拌补充",
+          "skills": [
+            {
+              "name": "get_stage_status",
+              "description": "获取好氧段当前工况(供LLM推理)",
+              "parameters": [],
+              "returns": "stage_status"
+            },
+            {
+              "name": "optimize_recirculation",
+              "description": "混合液回流优化",
+              "parameters": [],
+              "returns": "recirculation_result"
+            },
+            {
+              "name": "optimize_aeration",
+              "description": "暴气DO控制 (OUR模型+PID)",
+              "parameters": [],
+              "returns": "aeration_result"
+            },
+            {
+              "name": "optimize_dosing",
+              "description": "化学除磷投加 (PAC/FeCl3)",
+              "parameters": [],
+              "returns": "dosing_result"
+            },
+            {
+              "name": "optimize_mixing",
+              "description": "搅拌补充控制",
+              "parameters": [],
+              "returns": "mixing_result"
+            }
+          ],
+          "endpoints": {
+            "snapshot": "http://localhost:5000/api/v1/process_stage/aerobic/snapshot",
+            "control": "http://localhost:5000/api/v1/process_stage/aerobic/{action}"
+          }
+        }
+      }
+    },
+    {
+      "agent_id": "anaerobic_process",
+      "name": "Anaerobic Process Agent",
+      "description": "厌氧段智能体, 负责碳源投加、搅拌控制、污泥回流优化",
+      "skills": [
+        {
+          "name": "get_stage_status",
+          "description": "获取厌氧段当前工况(供LLM推理)",
+          "parameters": [],
+          "returns": "stage_status"
+        },
+        {
+          "name": "optimize_dosing",
+          "description": "碳源投加量优化 (C/N, VFA/TP)",
+          "parameters": [],
+          "returns": "dosing_result"
+        },
+        {
+          "name": "optimize_mixing",
+          "description": "搅拌强度优化 (3~8 W/m³, DO<0.2)",
+          "parameters": [],
+          "returns": "mixing_result"
+        },
+        {
+          "name": "optimize_recirculation",
+          "description": "污泥回流比优化 (浓度法)",
+          "parameters": [],
+          "returns": "recirculation_result"
+        }
+      ],
+      "endpoints": {
+        "snapshot": "http://localhost:5000/api/v1/process_stage/anaerobic/snapshot",
+        "control": "http://localhost:5000/api/v1/process_stage/anaerobic/{action}"
+      }
+    },
+    {
+      "agent_id": "anoxic_process",
+      "name": "Anoxic Process Agent",
+      "description": "缺氧段智能体, 负责外加碳源优化、搅拌控制、硝化液内回流优化",
+      "skills": [
+        {
+          "name": "get_stage_status",
+          "description": "获取缺氧段当前工况(供LLM推理)",
+          "parameters": [],
+          "returns": "stage_status"
+        },
+        {
+          "name": "optimize_dosing",
+          "description": "外加碳源优化 (反硝化碳需)",
+          "parameters": [],
+          "returns": "dosing_result"
+        },
+        {
+          "name": "optimize_mixing",
+          "description": "搅拌控制优化 (5~10 W/m³, DO<0.5)",
+          "parameters": [],
+          "returns": "mixing_result"
+        },
+        {
+          "name": "optimize_recirculation",
+          "description": "硬化液内回流优化 (r=200%~400%)",
+          "parameters": [],
+          "returns": "recirculation_result"
+        }
+      ],
+      "endpoints": {
+        "snapshot": "http://localhost:5000/api/v1/process_stage/anoxic/snapshot",
+        "control": "http://localhost:5000/api/v1/process_stage/anoxic/{action}"
+      }
+    },
+    {
+      "agent_id": "aerobic_process",
+      "name": "Aerobic Process Agent",
+      "description": "好氧段智能体, 负责曝气DO控制、化学除磷、混合液回流、搅拌补充",
+      "skills": [
+        {
+          "name": "get_stage_status",
+          "description": "获取好氧段当前工况(供LLM推理)",
+          "parameters": [],
+          "returns": "stage_status"
+        },
+        {
+          "name": "optimize_recirculation",
+          "description": "混合液回流优化",
+          "parameters": [],
+          "returns": "recirculation_result"
+        },
+        {
+          "name": "optimize_aeration",
+          "description": "暴气DO控制 (OUR模型+PID)",
+          "parameters": [],
+          "returns": "aeration_result"
+        },
+        {
+          "name": "optimize_dosing",
+          "description": "化学除磷投加 (PAC/FeCl3)",
+          "parameters": [],
+          "returns": "dosing_result"
+        },
+        {
+          "name": "optimize_mixing",
+          "description": "搅拌补充控制",
+          "parameters": [],
+          "returns": "mixing_result"
+        }
+      ],
+      "endpoints": {
+        "snapshot": "http://localhost:5000/api/v1/process_stage/aerobic/snapshot",
+        "control": "http://localhost:5000/api/v1/process_stage/aerobic/{action}"
+      }
+    }
+  ]
+}

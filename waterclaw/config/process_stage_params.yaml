@@ -1,0 +1,115 @@
+# ──────────────────────────────────────────────
+# 工段智能体参数配置 (AAO 工艺)
+# 严格按照《污水处理厂工艺设计手册》约束
+# ──────────────────────────────────────────────
+process_stage:
+
+  # ═══════════════════════════════════════════
+  # 工艺流程编排 (工段智能体自由组合)
+  # 支持: anaerobic, anoxic, aerobic
+  # 示例 AAOA: [anaerobic, anoxic, aerobic, anoxic]
+  # 默认 A2O: [anaerobic, anoxic, aerobic]
+  # ═══════════════════════════════════════════
+  flow_sequence:
+    - anaerobic
+    - anoxic
+    - aerobic
+    - anoxic    # 后缺氧段 (AAOA 工艺, 如不需要注释此行)
+
+  # ═══════════════════════════════════════════
+  # 厌氧段 (Anaerobic)
+  # ═══════════════════════════════════════════
+  anaerobic:
+    hrt_h: [1.0, 2.0]                    # 设计 HRT 范围 (h)
+    do_max_mg_l: 0.2                      # DO 上限 (mg/L), 严格厌氧
+    orp_range_mv: [-250, -100]            # ORP 约束 (mV)
+    mixing_power_w_m3: [3, 8]             # 搅拌功率密度 (W/m³), 防沉淀不破坏厌氧
+    vfa_tp_ratio_min: 4.0                 # VFA/TP 比下限, 保证释磷效果
+    temp_correction_theta: 1.04           # 温度修正系数 (Arrhenius)
+    return_ratio_min_pct: 50.0            # 污泥回流比下限 (%)
+    return_ratio_max_pct: 100.0           # 污泥回流比上限 (%)
+
+    dosing:
+      carbon_source: sodium_acetate       # 碳源类型 (sodium_acetate/methanol/glucose)
+      cn_ratio_target: 4.0                # C/N 目标 (BOD5/TN)
+      max_dose_mg_l: 100.0                # 最大碳源投加量 (mg/L)
+      min_dose_mg_l: 0.0
+
+  # ═══════════════════════════════════════════
+  # 缺氧段 (Anoxic)
+  # ═══════════════════════════════════════════
+  anoxic:
+    hrt_h: [2.0, 4.0]                    # 设计 HRT 范围 (h)
+    do_max_mg_l: 0.5                      # DO 上限 (mg/L)
+    orp_range_mv: [-100, 50]              # ORP 约束 (mV)
+    mixing_power_w_m3: [5, 10]            # 搅拌功率密度 (W/m³)
+    temp_correction_theta: 1.04
+
+    dosing:
+      carbon_source: sodium_acetate
+      max_dose_mg_l: 80.0
+      bod_available_ratio: 0.65           # 缺氧段可利用内碳源比例
+
+    denitrification:
+      carbon_demand_kgCOD_per_kgN: 2.86   # 反硝化碳需 (kgCOD/kgNO3-N)
+      recirculation_ratio_range: [2.0, 4.0]  # 硝化液内回流比 (200%~400%)
+      sdnr_20_mg_gVSS_h: 2.0             # 20°C 比反硝化速率 (mgNO3-N/gVSS/h)
+      sdnr_theta: 1.026                  # SDNR 温度修正
+
+  # ═══════════════════════════════════════════
+  # 好氧段 (Aerobic)
+  # ═══════════════════════════════════════════
+  aerobic:
+    hrt_h: [4.0, 8.0]                    # 设计 HRT 范围 (h)
+    do_target_mg_l: [1.5, 3.0]            # DO 目标范围 (mg/L)
+    orp_range_mv: [50, 300]               # ORP 约束 (mV)
+    srt_days: [10, 25]                    # SRT 范围 (d)
+    mixing_power_w_m3: [5, 15]            # 搅拌功率密度 (含曝气等效)
+    min_aeration_mixing_hz: 25.0          # 最低有效搅拌风机频率
+    high_nh3_threshold_mg_l: 30.0         # 高氨氮负荷阈值
+    low_temp_threshold_C: 15.0            # 低温阈值
+    recirculation_ratio_range: [2.0, 4.0] # 混合液回流比
+
+    # OUR 需氧量系数 (沿用 aeration_params)
+    our_coefficients:
+      a_prime: 0.5                        # kgO2/kgCOD (碳氧化氧当量)
+      b_prime: 0.1                        # kgO2/kgVSS/d (内源呼吸)
+      nitrification_factor: 4.57          # NH4→NO3 理论氧当量
+      denitrification_credit: 2.86        # NO3 还原的氧当量
+
+    # 氧转移参数
+    oxygen_transfer:
+      alpha: 0.6                          # 清/污水 KLa 修正系数
+      beta: 0.95                          # 污水 DO_sat 修正系数
+      theta: 1.024                        # 温度修正系数 (Arrhenius)
+
+    # 风机参数
+    blower:
+      freq_min_hz: 20.0
+      freq_max_hz: 50.0
+      freq_to_flow_slope: 22.37           # flow = slope * hz (nm³/h)
+      freq_to_flow_intercept: 0.0
+      min_switch_interval_sec: 300
+
+    # PID 控制器
+    pid:
+      kp: 5.0
+      ki: 0.5
+      kd: 0.1
+
+    # 化学除磷
+    dosing:
+      reagent: PAC                        # PAC / FeCl3
+      al_p_molar_ratio: 2.0              # Al/P 摩尔比 (1.5~3.0)
+      safety_factor: 1.2
+      al_content_pct: 15.8               # PAC 中 Al 含量 (%)
+      max_dose_mg_l: 50.0
+
+  # ═══════════════════════════════════════════
+  # SUMO 模拟器配置
+  # ═══════════════════════════════════════════
+  sumo:
+    input_template: sumo_input_template.xml
+    output_dir: sumo_results/
+    max_iterations: 5                     # 最大自迭代次数
+    convergence_threshold_pct: 5.0        # 收敛判定阈值 (%)

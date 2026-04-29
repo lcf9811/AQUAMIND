@@ -1,0 +1,138 @@
+{
+  "project": "water_treatment_openclaw",
+  "scada_http": {
+    "base_url_env": "SCADA_BASE_URL",
+    "default_timeout_ms": 8000,
+    "allowed_hosts_note": "由 Command Agent 白名单校验"
+  },
+  "agents": [
+    {
+      "id": "openclaw_master",
+      "role": "supervision_evolution",
+      "outputs": ["supervision_report"],
+      "memory": ["short_term_session", "long_term_rules"]
+    },
+    {
+      "id": "master_agent",
+      "role": "orchestration",
+      "inputs": ["supervision_report", "operator_goals"],
+      "delegates_to": [
+        "inlet_process",
+        "process_stage",
+        "outlet_process",
+        "regeneration_dosing",
+        "mbr_membrane",
+        "toxicity_treatment"
+      ]
+    },
+    {
+      "id": "inlet_process",
+      "skills": [
+        "inlet_assess_flow_quality",
+        "inlet_adjust_screen_pump",
+        "inlet_set_equalization",
+        "assess_coordinated_line_switch"
+      ],
+      "tools": ["http_get_snapshot", "http_post_control"],
+      "perception_mock": "mockdata/perception/inlet.json",
+      "action_mocks": ["mockdata/actions/inlet_equalization.json"]
+    },
+    {
+      "id": "process_stage",
+      "role": "process_stage_orchestration",
+      "label": "Process Stage Orchestrator (AAO)",
+      "delegates_to": ["anaerobic_process", "anoxic_process", "aerobic_process"],
+      "skills": [
+        "run_full_optimization",
+        "export_to_sumo",
+        "import_sumo_results",
+        "run_iteration_cycle"
+      ],
+      "tools": ["http_get_snapshot", "http_post_control"],
+      "config": "config/process_stage_params.yaml",
+      "model": "models/process_stage/"
+    },
+    {
+      "id": "anaerobic_process",
+      "role": "mechanism_model",
+      "label": "Anaerobic Stage Agent",
+      "skills": ["optimize_dosing", "optimize_mixing", "optimize_recirculation"],
+      "tools": ["http_get_snapshot"],
+      "config": "config/process_stage_params.yaml",
+      "model": "models/process_stage/anaerobic_model.py"
+    },
+    {
+      "id": "anoxic_process",
+      "role": "mechanism_model",
+      "label": "Anoxic Stage Agent",
+      "skills": ["optimize_dosing", "optimize_mixing", "optimize_recirculation"],
+      "tools": ["http_get_snapshot"],
+      "config": "config/process_stage_params.yaml",
+      "model": "models/process_stage/anoxic_model.py"
+    },
+    {
+      "id": "aerobic_process",
+      "role": "mechanism_model",
+      "label": "Aerobic Stage Agent",
+      "skills": ["optimize_recirculation", "optimize_aeration", "optimize_dosing", "optimize_mixing"],
+      "tools": ["http_get_snapshot"],
+      "config": "config/process_stage_params.yaml",
+      "model": "models/process_stage/aerobic_model.py"
+    },
+    {
+      "id": "outlet_process",
+      "skills": ["outlet_check_compliance", "outlet_adjust_polishing"],
+      "tools": ["http_get_snapshot", "http_post_control"],
+      "perception_mock": "mockdata/perception/outlet.json",
+      "action_mocks": ["mockdata/actions/outlet_polishing.json"]
+    },
+    {
+      "id": "regeneration_dosing",
+      "skills": [
+        "dosing_calculate_feed",
+        "dosing_apply_pump_rate",
+        "regen_start_sequence"
+      ],
+      "tools": ["http_get_snapshot", "http_post_control"],
+      "perception_mock": "mockdata/perception/dosing.json",
+      "action_mocks": [
+        "mockdata/actions/dosing_pump.json",
+        "mockdata/actions/regeneration_start.json"
+      ]
+    },
+
+    {
+      "id": "mbr_membrane",
+      "skills": [
+        "mbr_monitor_tmp_mlf",
+        "mbr_relaxation_or_backwash",
+        "mbr_adjust_air_scour"
+      ],
+      "tools": ["http_get_snapshot", "http_post_control"],
+      "perception_mock": "mockdata/perception/mbr.json",
+      "action_mocks": ["mockdata/actions/mbr_backwash.json"]
+    },
+    {
+      "id": "toxicity_treatment",
+      "skills": ["tox_detect_anomaly", "tox_trigger_dilution_or_hold"],
+      "tools": ["http_get_snapshot", "http_post_control"],
+      "perception_mock": "mockdata/perception/toxicity.json",
+      "action_mocks": ["mockdata/actions/toxicity_mitigation.json"]
+    },
+    {
+      "id": "water_openclaw_hook",
+      "role": "hook_telemetry_pipeline",
+      "inputs": ["scada_hook_telemetry"],
+      "skills": [
+        "water_treatment_orchestrator",
+        "water_plant_gate",
+        "water_inlet_toxicity_flow",
+        "water_treatment_rules_kb",
+        "water_process_stage_optimization",
+        "water_outlet_toxicity"
+      ],
+      "tools": ["http_get_snapshot", "http_post_control"],
+      "notes": "工艺 Hook 唯一入口 water_treatment_orchestrator（含解析与初筛）；载荷 scada_three_process_hook_v1 见 openclaw_skills/water-treatment-orchestrator/SKILL.md；换线门禁 coordinated_line_switch_eval；规则库 water_treatment_rules_kb"
+    }
+  ]
+}
